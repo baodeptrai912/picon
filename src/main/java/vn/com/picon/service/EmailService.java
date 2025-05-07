@@ -88,22 +88,47 @@ public class EmailService {
         System.out.println("Đã gửi email LIÊN HỆ.");
     }
     public void sendApplicationEmail(String name, String email, String phone, String messageContent,
-                                     String cvFileName) throws MessagingException {
+                                     InputStreamSource cvAttachment, String cvFileName) throws MessagingException { // Thêm InputStreamSource cvAttachment
         MimeMessage message = mailSender.createMimeMessage();
+        // true = multipart message (cần thiết cho attachment)
+        // "UTF-8" = encoding
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        // <-- Sử dụng giá trị inject -->
-        helper.setTo(applicationRecipientEmail);
-        helper.setFrom(mailFromAddress); // <-- Sử dụng giá trị inject
-        helper.setReplyTo(email);
+        helper.setTo(applicationRecipientEmail); // Địa chỉ email nhận hồ sơ
+        helper.setFrom(mailFromAddress);         // Email gửi đi của bạn
+        helper.setReplyTo(email);                // Để người nhận có thể reply trực tiếp cho ứng viên
         helper.setSubject("PiconWebsite - Hồ sơ ứng tuyển mới từ: " + name);
 
+        // Xây dựng nội dung email
         StringBuilder emailBody = new StringBuilder();
-        // ... xây dựng nội dung email ...
-        helper.setText(emailBody.toString(), false);
+        emailBody.append("Bạn nhận được một hồ sơ ứng tuyển mới từ PiconWebsite:\n\n");
+        emailBody.append("Tên ứng viên: ").append(name).append("\n");
+        emailBody.append("Email ứng viên: ").append(email).append("\n");
 
-        System.out.println("Chuẩn bị gửi email ỨNG TUYỂN tới " + applicationRecipientEmail + " từ " + email);
+        if (phone != null && !phone.isBlank()) {
+            emailBody.append("Số điện thoại: ").append(phone).append("\n");
+        }
+
+        emailBody.append("\nLời nhắn của ứng viên:\n");
+        if (messageContent != null && !messageContent.isBlank()) {
+            emailBody.append(messageContent).append("\n");
+        } else {
+            emailBody.append("(Không có lời nhắn)\n");
+        }
+
+        if (cvAttachment != null && cvFileName != null && !cvFileName.isBlank()) {
+            emailBody.append("\nCV được đính kèm với tên file: ").append(cvFileName);
+            helper.addAttachment(cvFileName, cvAttachment); // Đính kèm file CV
+            System.out.println("Đã thêm CV đính kèm: " + cvFileName);
+        } else {
+            emailBody.append("\n(Không có CV đính kèm)");
+        }
+
+        helper.setText(emailBody.toString(), false); // false nghĩa là gửi dạng text thuần
+
+        System.out.println("Chuẩn bị gửi email ỨNG TUYỂN tới " + applicationRecipientEmail + " từ " + email + (cvFileName != null ? " với CV: " + cvFileName : ""));
         mailSender.send(message);
         System.out.println("Đã gửi email ỨNG TUYỂN.");
     }
+
 }
